@@ -4,13 +4,13 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-const navLinks = [
-  { label: "Men", href: "#" },
-  { label: "Women", href: "#" },
-  { label: "Kids", href: "#" },
-  { label: "Collections", href: "#" },
-  { label: "Contact", href: "#" },
-];
+const NAV_LINKS = [
+  { label: "Men", href: "/products?gender=men" },
+  { label: "Women", href: "/products?gender=women" },
+  { label: "Kids", href: "/products?gender=unisex" },
+  { label: "Collections", href: "/collections" },
+  { label: "Contact", href: "/contact" },
+] as const;
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -34,7 +34,7 @@ const Navbar = () => {
 
         {/* Desktop nav links */}
         <ul className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
+          {NAV_LINKS.map((link) => (
             <li key={link.label}>
               <Link
                 href={link.href}
@@ -97,7 +97,7 @@ const Navbar = () => {
         }`}
       >
         <ul className="flex flex-col gap-4 px-6 pb-6">
-          {navLinks.map((link) => (
+          {NAV_LINKS.map((link) => (
             <li key={link.label}>
               <Link
                 href={link.href}
