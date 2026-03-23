@@ -51,7 +51,7 @@ const Card = ({
 
         {colors !== undefined && colors > 0 && (
           <p className="text-caption text-dark-500">
-            {colors} Colour{colors > 1 ? "" : ""}
+            {colors} Colour{colors !== 1 ? "s" : ""}
           </p>
         )}
       </div>
