@@ -1,65 +1,55 @@
-import { asc } from "drizzle-orm";
-import { CartCounter } from "@/components/cart-counter";
-import { db } from "@/db";
-import { products } from "@/db/schema";
+"use client";
 
-async function getProducts() {
-  if (!process.env.DATABASE_URL) return [];
+import { useCartStore } from "@/store/cart";
+import { useAuthStore } from "@/store/auth";
 
-  try {
-    return await db.select().from(products).orderBy(asc(products.name));
-  } catch {
-    return [];
-  }
-}
-
-export default async function Home() {
-  const items = await getProducts();
+export default function Home() {
+  const { items, total, getItemCount } = useCartStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-12">
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Nike Products</h1>
-          <p className="text-sm text-zinc-600">
-            Rendered from Neon Postgres with Drizzle ORM
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-8">
+      <div className="mx-auto max-w-4xl">
+        <div className="rounded-2xl bg-white p-8 shadow-lg">
+          <h1 className="mb-4 text-4xl font-bold text-gray-900">E-Commerce App</h1>
+          <p className="mb-8 text-lg text-gray-600">
+            Built with Next.js, TypeScript, TailwindCSS, Better Auth, Neon PostgreSQL, Drizzle ORM, and Zustand
           </p>
-        </div>
-        <CartCounter />
-      </header>
 
-      {items.length === 0 ? (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-700">
-          No products found. Run <code>npm run db:seed</code> after setting{" "}
-          <code>DATABASE_URL</code>.
-        </p>
-      ) : (
-        <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => (
-            <article
-              key={item.id}
-              className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.image || "https://placehold.co/800x600?text=Nike"}
-                alt={item.name}
-                className="h-48 w-full object-cover"
-              />
-              <div className="space-y-2 p-4">
-                <p className="text-xs font-medium uppercase text-zinc-500">
-                  Nike • {item.category || "General"}
-                </p>
-                <h2 className="text-lg font-semibold">{item.name}</h2>
-                <p className="text-sm text-zinc-600">{item.description}</p>
-                <p className="text-base font-bold">
-                  ${Number(item.price).toFixed(2)}
-                </p>
-              </div>
-            </article>
-          ))}
-        </section>
-      )}
+          <div className="mb-8 grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg bg-blue-50 p-4">
+              <h2 className="mb-2 text-xl font-semibold text-blue-900">Setup Status</h2>
+              <ul className="space-y-1 text-sm text-blue-800">
+                <li>✅ Next.js with TypeScript — Ready</li>
+                <li>✅ TailwindCSS — Ready</li>
+                <li>✅ ESLint — Ready</li>
+                <li>✅ Zustand State Management — Ready</li>
+                <li>⚠️ Better Auth — Needs .env setup</li>
+                <li>⚠️ Neon PostgreSQL + Drizzle — Needs database setup</li>
+              </ul>
+            </div>
+
+            <div className="rounded-lg bg-emerald-50 p-4">
+              <h2 className="mb-2 text-xl font-semibold text-emerald-900">Store Preview</h2>
+              <p className="text-sm text-emerald-800">Items in cart: {getItemCount()}</p>
+              <p className="text-sm text-emerald-800">Cart total: ${total.toFixed(2)}</p>
+              <p className="text-sm text-emerald-800">Auth state: {isAuthenticated ? "Logged in" : "Logged out"}</p>
+              <p className="text-sm text-emerald-800">Current user: {user?.email || "None"}</p>
+              <p className="text-sm text-emerald-800">Tracked products in store: {items.length}</p>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-amber-50 p-4">
+            <h3 className="mb-2 text-lg font-semibold text-amber-900">Next Steps</h3>
+            <ol className="list-inside list-decimal space-y-1 text-sm text-amber-800">
+              <li>Set up your Neon PostgreSQL database</li>
+              <li>Copy .env.example to .env and fill in your credentials</li>
+              <li>Run npm run db:push to create tables</li>
+              <li>Start building your e-commerce features</li>
+            </ol>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

@@ -2,7 +2,5 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
-const databaseUrl = process.env.DATABASE_URL;
-const fallbackUrl = "postgresql://placeholder:placeholder@localhost:5432/placeholder";
-const sql = neon(databaseUrl || fallbackUrl);
+const sql = neon(process.env.DATABASE_URL!);
 export const db = drizzle(sql, { schema });
