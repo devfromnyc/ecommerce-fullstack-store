@@ -1,27 +1,23 @@
-"use client";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-
-type CartItem = {
+interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
   image?: string;
-};
+}
 
-type NewCartItem = Omit<CartItem, "quantity">;
-
-type CartState = {
+interface CartState {
   items: CartItem[];
   total: number;
-  addItem: (item: NewCartItem) => void;
+  addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   getItemCount: () => number;
-};
+}
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -31,7 +27,7 @@ export const useCartStore = create<CartState>()(
       addItem: (item) => {
         const items = get().items;
         const existingItem = items.find((i) => i.id === item.id);
-
+        
         if (existingItem) {
           set({
             items: items.map((i) =>
@@ -43,14 +39,14 @@ export const useCartStore = create<CartState>()(
             items: [...items, { ...item, quantity: 1 }],
           });
         }
-
+        
         const newItems = get().items;
-        const total = newItems.reduce((sum, cartItem) => sum + cartItem.price * cartItem.quantity, 0);
+        const total = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
         set({ total });
       },
       removeItem: (id) => {
         const items = get().items.filter((item) => item.id !== id);
-        const total = items.reduce((sum, cartItem) => sum + cartItem.price * cartItem.quantity, 0);
+        const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
         set({ items, total });
       },
       updateQuantity: (id, quantity) => {
@@ -58,18 +54,18 @@ export const useCartStore = create<CartState>()(
           get().removeItem(id);
           return;
         }
-
+        
         const items = get().items.map((item) =>
           item.id === id ? { ...item, quantity } : item
         );
-        const total = items.reduce((sum, cartItem) => sum + cartItem.price * cartItem.quantity, 0);
+        const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
         set({ items, total });
       },
       clearCart: () => set({ items: [], total: 0 }),
       getItemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
     }),
     {
-      name: "cart-storage",
+      name: 'cart-storage',
     }
   )
 );
