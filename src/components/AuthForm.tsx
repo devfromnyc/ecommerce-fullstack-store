@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SocialProviders from "./SocialProviders";
+import { signUp, signIn } from "@/lib/auth/actions";
 
 interface AuthFormProps {
   mode: "sign-in" | "sign-up";
@@ -10,8 +12,52 @@ interface AuthFormProps {
 
 const AuthForm = ({ mode }: AuthFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const isSignUp = mode === "sign-up";
+  const callbackUrl = searchParams.get("callbackUrl");
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      if (isSignUp) {
+        const name = formData.get("fullName") as string;
+        const result = await signUp({ name, email, password });
+
+        if (!result.success) {
+          setError(result.error ?? "Sign up failed.");
+          return;
+        }
+
+        router.push(callbackUrl ?? result.redirectTo ?? "/");
+      } else {
+        const result = await signIn({ email, password });
+
+        if (!result.success) {
+          setError(result.error ?? "Sign in failed.");
+          return;
+        }
+
+        router.push(callbackUrl ?? result.redirectTo ?? "/");
+      }
+
+      router.refresh();
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div className="flex w-full flex-col items-center">
@@ -64,8 +110,18 @@ const AuthForm = ({ mode }: AuthFormProps) => {
         <span className="h-px flex-1 bg-light-300" />
       </div>
 
+      {/* Error message */}
+      {error && (
+        <div
+          className="mb-4 w-full rounded-lg border border-red/20 bg-red/5 px-4 py-3 text-caption text-red"
+          role="alert"
+        >
+          {error}
+        </div>
+      )}
+
       {/* Form */}
-      <form className="flex w-full flex-col gap-5" onSubmit={(e) => e.preventDefault()}>
+      <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit}>
         {/* Full Name — sign-up only */}
         {isSignUp && (
           <div className="flex flex-col gap-1.5">
@@ -81,6 +137,7 @@ const AuthForm = ({ mode }: AuthFormProps) => {
               type="text"
               placeholder="Enter your full name"
               autoComplete="name"
+              required
               className="w-full rounded-full border border-light-300 bg-light-200 px-5 py-3 text-body text-dark-900 placeholder:text-dark-500 transition-colors focus:border-dark-900 focus:outline-none"
             />
           </div>
@@ -100,6 +157,7 @@ const AuthForm = ({ mode }: AuthFormProps) => {
             type="email"
             placeholder="johndoe@gmail.com"
             autoComplete="email"
+            required
             className="w-full rounded-full border border-light-300 bg-light-200 px-5 py-3 text-body text-dark-900 placeholder:text-dark-500 transition-colors focus:border-dark-900 focus:outline-none"
           />
         </div>
@@ -119,6 +177,8 @@ const AuthForm = ({ mode }: AuthFormProps) => {
               type={showPassword ? "text" : "password"}
               placeholder="minimum 8 characters"
               autoComplete={isSignUp ? "new-password" : "current-password"}
+              required
+              minLength={isSignUp ? 8 : undefined}
               className="w-full rounded-full border border-light-300 bg-light-200 px-5 py-3 pr-12 text-body text-dark-900 placeholder:text-dark-500 transition-colors focus:border-dark-900 focus:outline-none"
             />
             <button
@@ -171,9 +231,16 @@ const AuthForm = ({ mode }: AuthFormProps) => {
         {/* Submit button */}
         <button
           type="submit"
-          className="mt-2 w-full rounded-full bg-dark-900 px-6 py-3.5 text-body-medium font-medium text-light-100 transition-colors hover:bg-dark-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-900"
+          disabled={isLoading}
+          className="mt-2 w-full rounded-full bg-dark-900 px-6 py-3.5 text-body-medium font-medium text-light-100 transition-colors hover:bg-dark-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isSignUp ? "Sign Up" : "Sign In"}
+          {isLoading
+            ? isSignUp
+              ? "Creating Account..."
+              : "Signing In..."
+            : isSignUp
+              ? "Sign Up"
+              : "Sign In"}
         </button>
       </form>
 
