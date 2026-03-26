@@ -1,40 +1,26 @@
 import Image from "next/image";
 
-const providers = [
-  {
-    name: "Google",
-    icon: "/google.svg",
-    label: "Continue with Google",
-  },
-  {
-    name: "Apple",
-    icon: "/apple.svg",
-    label: "Continue with Apple",
-  },
-];
+type Props = { variant?: "sign-in" | "sign-up" };
 
-const SocialProviders = () => {
+export default function SocialProviders({ variant = "sign-in" }: Props) {
   return (
-    <div className="flex flex-col gap-3">
-      {providers.map((provider) => (
-        <button
-          key={provider.name}
-          type="button"
-          className="flex w-full items-center justify-center gap-3 rounded-full border border-light-300 bg-light-100 px-6 py-3 text-body-medium font-medium text-dark-900 transition-colors hover:bg-light-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-900"
-          aria-label={provider.label}
-        >
-          <Image
-            src={provider.icon}
-            alt=""
-            width={20}
-            height={20}
-            aria-hidden="true"
-          />
-          <span>{provider.label}</span>
-        </button>
-      ))}
+    <div className="space-y-3">
+      <button
+        type="button"
+        className="flex w-full items-center justify-center gap-3 rounded-xl border border-light-300 bg-light-100 px-4 py-3 text-body-medium text-dark-900 hover:bg-light-200 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
+        aria-label={`${variant === "sign-in" ? "Continue" : "Sign up"} with Google`}
+      >
+        <Image src="/google.svg" alt="" width={18} height={18} />
+        <span>Continue with Google</span>
+      </button>
+      <button
+        type="button"
+        className="flex w-full items-center justify-center gap-3 rounded-xl border border-light-300 bg-light-100 px-4 py-3 text-body-medium text-dark-900 hover:bg-light-200 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
+        aria-label={`${variant === "sign-in" ? "Continue" : "Sign up"} with Apple`}
+      >
+        <Image src="/apple.svg" alt="" width={18} height={18} />
+        <span>Continue with Apple</span>
+      </button>
     </div>
   );
-};
-
-export default SocialProviders;
+}

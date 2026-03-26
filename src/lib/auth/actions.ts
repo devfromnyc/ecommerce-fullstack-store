@@ -1,139 +1,138 @@
 "use server";
 
-import { headers } from "next/headers";
+import {cookies, headers} from "next/headers";
+import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { signUpSchema, signInSchema } from "./validation";
-import {
-  getGuestSession,
-  createGuestSession as createGuestSessionHelper,
-  deleteGuestSession,
-} from "./guest-session";
-import type { SignUpInput, SignInInput } from "./validation";
+import { db } from "@/lib/db";
+import { guests } from "@/lib/db/schema/index";
+import { and, eq, lt } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
-interface ActionResult {
-  success: boolean;
-  error?: string;
-  redirectTo?: string;
-}
+const COOKIE_OPTIONS = {
+  httpOnly: true as const,
+  secure: true as const,
+  sameSite: "strict" as const,
+  path: "/" as const,
+  maxAge: 60 * 60 * 24 * 7, // 7 days
+};
 
-export async function signUp(input: SignUpInput): Promise<ActionResult> {
-  const parsed = signUpSchema.safeParse(input);
+const emailSchema = z.string().email();
+const passwordSchema = z.string().min(8).max(128);
+const nameSchema = z.string().min(1).max(100);
 
-  if (!parsed.success) {
-    const firstError = parsed.error.errors[0];
-    return { success: false, error: firstError?.message ?? "Invalid input" };
+export async function createGuestSession() {
+  const cookieStore = await cookies();
+  const existing = (await cookieStore).get("guest_session");
+  if (existing?.value) {
+    return { ok: true, sessionToken: existing.value };
   }
 
-  const { name, email, password } = parsed.data;
-  const guestToken = await getGuestSession();
+  const sessionToken = randomUUID();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + COOKIE_OPTIONS.maxAge * 1000);
 
+  await db.insert(guests).values({
+    sessionToken,
+    expiresAt,
+  });
+
+  (await cookieStore).set("guest_session", sessionToken, COOKIE_OPTIONS);
+  return { ok: true, sessionToken };
+}
+
+export async function guestSession() {
+  const cookieStore = await cookies();
+  const token = (await cookieStore).get("guest_session")?.value;
+  if (!token) {
+    return { sessionToken: null };
+  }
+  const now = new Date();
+  await db
+    .delete(guests)
+    .where(and(eq(guests.sessionToken, token), lt(guests.expiresAt, now)));
+
+  return { sessionToken: token };
+}
+
+const signUpSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  name: nameSchema,
+});
+
+export async function signUp(formData: FormData) {
+  const rawData = {
+    name: formData.get('name') as string,
+    email: formData.get('email') as string,
+    password: formData.get('password') as string,
+  }
+
+  const data = signUpSchema.parse(rawData);
+
+  const res = await auth.api.signUpEmail({
+    body: {
+      email: data.email,
+      password: data.password,
+      name: data.name,
+    },
+  });
+
+  await migrateGuestToUser();
+  return { ok: true, userId: res.user?.id };
+}
+
+const signInSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+});
+
+export async function signIn(formData: FormData) {
+  const rawData = {
+    email: formData.get('email') as string,
+    password: formData.get('password') as string,
+  }
+
+  const data = signInSchema.parse(rawData);
+
+  const res = await auth.api.signInEmail({
+    body: {
+      email: data.email,
+      password: data.password,
+    },
+  });
+
+  await migrateGuestToUser();
+  return { ok: true, userId: res.user?.id };
+}
+
+export async function getCurrentUser() {
   try {
-    const response = await auth.api.signUpEmail({
-      body: {
-        name,
-        email,
-        password,
-      },
-      headers: await headers(),
-    });
+    const session = await auth.api.getSession({
+      headers: await headers()
+    })
 
-    if (!response) {
-      return { success: false, error: "Sign up failed. Please try again." };
-    }
-
-    if (guestToken) {
-      await mergeGuestCartWithUserCart(guestToken);
-      await deleteGuestSession(guestToken);
-    }
-
-    return { success: true, redirectTo: "/" };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "An unexpected error occurred";
-    return { success: false, error: message };
+    return session?.user ?? null;
+  } catch (e) {
+    console.log(e);
+    return null;
   }
 }
 
-export async function signIn(input: SignInInput): Promise<ActionResult> {
-  const parsed = signInSchema.safeParse(input);
-
-  if (!parsed.success) {
-    const firstError = parsed.error.errors[0];
-    return { success: false, error: firstError?.message ?? "Invalid input" };
-  }
-
-  const { email, password } = parsed.data;
-  const guestToken = await getGuestSession();
-
-  try {
-    const response = await auth.api.signInEmail({
-      body: {
-        email,
-        password,
-      },
-      headers: await headers(),
-    });
-
-    if (!response) {
-      return { success: false, error: "Invalid email or password." };
-    }
-
-    if (guestToken) {
-      await mergeGuestCartWithUserCart(guestToken);
-      await deleteGuestSession(guestToken);
-    }
-
-    return { success: true, redirectTo: "/" };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Invalid email or password.";
-    return { success: false, error: message };
-  }
+export async function signOut() {
+  await auth.api.signOut({ headers: {} });
+  return { ok: true };
 }
 
-export async function signOut(): Promise<ActionResult> {
-  try {
-    await auth.api.signOut({
-      headers: await headers(),
-    });
-
-    return { success: true, redirectTo: "/sign-in" };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Sign out failed.";
-    return { success: false, error: message };
-  }
+export async function mergeGuestCartWithUserCart() {
+  await migrateGuestToUser();
+  return { ok: true };
 }
 
-export async function guestSession(): Promise<string | null> {
-  return getGuestSession();
-}
+async function migrateGuestToUser() {
+  const cookieStore = await cookies();
+  const token = (await cookieStore).get("guest_session")?.value;
+  if (!token) return;
 
-export async function createGuestSessionAction(): Promise<string> {
-  const existingToken = await getGuestSession();
-  if (existingToken) {
-    return existingToken;
-  }
-  return createGuestSessionHelper();
-}
-
-/**
- * Merges guest cart data with the authenticated user's cart.
- * This is a placeholder that should be expanded when the cart system
- * is fully implemented with database-backed carts.
- *
- * Currently, the cart is managed client-side via Zustand/localStorage.
- * When a database-backed cart is implemented, this function will:
- * 1. Look up guest cart items by guestToken
- * 2. Transfer those items to the user's cart
- * 3. Remove the guest cart records
- */
-export async function mergeGuestCartWithUserCart(
-  guestToken: string
-): Promise<void> {
-  // Future implementation: merge guest cart items into user cart
-  // For now, the client-side Zustand store handles cart persistence
-  // and the cart data naturally transfers when the user logs in
-  // since it's stored in localStorage (not tied to guest session).
-  void guestToken;
+  await db.delete(guests).where(eq(guests.sessionToken, token));
+  (await cookieStore).delete("guest_session");
 }

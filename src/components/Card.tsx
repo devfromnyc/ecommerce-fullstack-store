@@ -1,62 +1,79 @@
 import Image from "next/image";
+import Link from "next/link";
 
-interface CardProps {
+export type BadgeTone = "red" | "green" | "orange";
+
+export interface CardProps {
   title: string;
-  description: string;
-  price: number;
-  image: string;
-  colors?: number;
-  badge?: string;
+  description?: string;
+  subtitle?: string;
+  meta?: string | string[];
+  imageSrc: string;
+  imageAlt?: string;
+  price?: string | number;
+  href?: string;
+  badge?: { label: string; tone?: BadgeTone };
+  className?: string;
 }
 
-const Card = ({
+const toneToBg: Record<BadgeTone, string> = {
+  red: "text-[--color-red]",
+  green: "text-[--color-green]",
+  orange: "text-[--color-orange]",
+};
+
+export default function Card({
   title,
   description,
+  subtitle,
+  meta,
+  imageSrc,
+  imageAlt = title,
   price,
-  image,
-  colors,
+  href,
   badge,
-}: CardProps) => {
-  return (
-    <article className="group flex w-full max-w-sm flex-col overflow-hidden rounded-lg bg-light-100 shadow-sm transition-shadow hover:shadow-md">
-      {/* Image section */}
-      <div className="relative aspect-square w-full overflow-hidden bg-light-200">
+  className = "",
+}: CardProps) {
+  const displayPrice =
+    price === undefined ? undefined : typeof price === "number" ? `$${price.toFixed(2)}` : price;
+  const content = (
+    <article
+      className={`group rounded-xl bg-light-100 ring-1 ring-light-300 transition-colors hover:ring-dark-500 ${className}`}
+    >
+      <div className="relative aspect-square overflow-hidden rounded-t-xl bg-light-200">
         <Image
-          src={image}
-          alt={title}
+          src={imageSrc}
+          alt={imageAlt}
           fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          sizes="(min-width: 1280px) 360px, (min-width: 1024px) 300px, (min-width: 640px) 45vw, 90vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
-
-        {badge && (
-          <span className="absolute left-4 top-4 rounded-full bg-light-100 px-4 py-1.5 text-caption font-medium text-red">
-            {badge}
-          </span>
-        )}
       </div>
-
-      {/* Info section */}
-      <div className="flex flex-col gap-1 bg-dark-900 px-4 py-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-body-medium font-medium text-light-100">
-            {title}
-          </h3>
-          <span className="text-body-medium font-medium text-light-100 whitespace-nowrap">
-            ${price.toFixed(2)}
-          </span>
+      <div className="p-4">
+        <div className="mb-1 flex items-baseline justify-between gap-3">
+          <h3 className="text-heading-3 text-dark-900">{title}</h3>
+          {displayPrice && <span className="text-body-medium text-dark-900">{displayPrice}</span>}
         </div>
-
-        <p className="text-caption text-dark-500">{description}</p>
-
-        {colors !== undefined && colors > 0 && (
-          <p className="text-caption text-dark-500">
-            {colors} Colour{colors !== 1 ? "s" : ""}
+        {description && <p className="text-body text-dark-700">{description}</p>}
+        {subtitle && <p className="text-body text-dark-700">{subtitle}</p>}
+        {meta && (
+          <p className="mt-1 text-caption text-dark-700">
+            {Array.isArray(meta) ? meta.join(" • ") : meta}
           </p>
         )}
       </div>
     </article>
   );
-};
 
-export default Card;
+  return href ? (
+    <Link
+      href={href}
+      aria-label={title}
+      className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[--color-dark-500]"
+    >
+      {content}
+    </Link>
+  ) : (
+    content
+  );
+}

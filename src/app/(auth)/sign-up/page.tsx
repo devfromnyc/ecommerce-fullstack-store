@@ -1,10 +1,6 @@
 import AuthForm from "@/components/AuthForm";
+import {signUp} from "@/lib/auth/actions";
 
-export const metadata = {
-  title: "Sign Up | Nike",
-  description: "Create your Nike account",
-};
-
-export default function SignUpPage() {
-  return <AuthForm mode="sign-up" />;
+export default function Page() {
+  return <AuthForm mode="sign-up" onSubmit={signUp} />;
 }

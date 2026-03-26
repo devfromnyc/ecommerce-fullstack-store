@@ -1,154 +1,84 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SocialProviders from "./SocialProviders";
-import { signUp, signIn } from "@/lib/auth/actions";
+import {useRouter} from "next/navigation";
 
-interface AuthFormProps {
+type Props = {
   mode: "sign-in" | "sign-up";
-}
+  onSubmit: (formData: FormData) => Promise<{ ok: boolean; userId?: string } | void>;
+};
 
-const AuthForm = ({ mode }: AuthFormProps) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+export default function AuthForm({ mode, onSubmit }: Props) {
+  const [show, setShow] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  const isSignUp = mode === "sign-up";
-  const callbackUrl = searchParams.get("callbackUrl");
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
 
     try {
-      if (isSignUp) {
-        const name = formData.get("fullName") as string;
-        const result = await signUp({ name, email, password });
+      const result = await onSubmit(formData);
 
-        if (!result.success) {
-          setError(result.error ?? "Sign up failed.");
-          return;
-        }
-
-        router.push(callbackUrl ?? result.redirectTo ?? "/");
-      } else {
-        const result = await signIn({ email, password });
-
-        if (!result.success) {
-          setError(result.error ?? "Sign in failed.");
-          return;
-        }
-
-        router.push(callbackUrl ?? result.redirectTo ?? "/");
-      }
-
-      router.refresh();
-    } catch {
-      setError("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
+      if(result?.ok) router.push("/");
+    } catch (e) {
+      console.log("error", e);
     }
   }
 
   return (
-    <div className="flex w-full flex-col items-center">
-      {/* Toggle link */}
-      <p className="mb-6 text-caption text-dark-700">
-        {isSignUp ? (
-          <>
-            Already have an account?{" "}
-            <Link
-              href="/sign-in"
-              className="font-medium text-dark-900 underline underline-offset-2 hover:text-dark-700"
-            >
-              Sign In
-            </Link>
-          </>
-        ) : (
-          <>
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/sign-up"
-              className="font-medium text-dark-900 underline underline-offset-2 hover:text-dark-700"
-            >
-              Sign Up
-            </Link>
-          </>
-        )}
-      </p>
-
-      {/* Heading */}
-      <h1 className="mb-2 text-center text-heading-3 font-bold text-dark-900">
-        {isSignUp ? "Join Nike Today!" : "Welcome Back!"}
-      </h1>
-      <p className="mb-8 text-center text-body text-dark-700">
-        {isSignUp
-          ? "Create your account to start your journey"
-          : "Please enter your details to sign in to your account"}
-      </p>
-
-      {/* Social providers */}
-      <div className="mb-6 w-full">
-        <SocialProviders />
+    <div className="space-y-6">
+      <div className="text-center">
+        <p className="text-caption text-dark-700">
+          {mode === "sign-in" ? "Don’t have an account? " : "Already have an account? "}
+          <Link href={mode === "sign-in" ? "/sign-up" : "/sign-in"} className="underline">
+            {mode === "sign-in" ? "Sign Up" : "Sign In"}
+          </Link>
+        </p>
+        <h1 className="mt-3 text-heading-3 text-dark-900">
+          {mode === "sign-in" ? "Welcome Back!" : "Join Nike Today!"}
+        </h1>
+        <p className="mt-1 text-body text-dark-700">
+          {mode === "sign-in"
+            ? "Sign in to continue your journey"
+            : "Create your account to start your fitness journey"}
+        </p>
       </div>
 
-      {/* Divider */}
-      <div className="mb-6 flex w-full items-center gap-4">
-        <span className="h-px flex-1 bg-light-300" />
-        <span className="text-caption text-dark-500">
-          Or {isSignUp ? "sign up" : "sign in"} with
+      <SocialProviders variant={mode} />
+
+      <div className="flex items-center gap-4">
+        <hr className="h-px w-full border-0 bg-light-300" />
+        <span className="shrink-0 text-caption text-dark-700">
+          Or {mode === "sign-in" ? "sign in" : "sign up"} with
         </span>
-        <span className="h-px flex-1 bg-light-300" />
+        <hr className="h-px w-full border-0 bg-light-300" />
       </div>
 
-      {/* Error message */}
-      {error && (
-        <div
-          className="mb-4 w-full rounded-lg border border-red/20 bg-red/5 px-4 py-3 text-caption text-red"
-          role="alert"
-        >
-          {error}
-        </div>
-      )}
-
-      {/* Form */}
-      <form className="flex w-full flex-col gap-5" onSubmit={handleSubmit}>
-        {/* Full Name — sign-up only */}
-        {isSignUp && (
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="fullName"
-              className="text-body-medium font-medium text-dark-900"
-            >
-              Full Name
+      <form
+        className="space-y-4"
+        onSubmit={handleSubmit}
+      >
+        {mode === "sign-up" && (
+          <div className="space-y-1">
+            <label htmlFor="name" className="text-caption text-dark-900">
+              Name
             </label>
             <input
-              id="fullName"
-              name="fullName"
+              id="name"
+              name="name"
               type="text"
-              placeholder="Enter your full name"
+              placeholder="Enter your name"
+              className="w-full rounded-xl border border-light-300 bg-light-100 px-4 py-3 text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
               autoComplete="name"
-              required
-              className="w-full rounded-full border border-light-300 bg-light-200 px-5 py-3 text-body text-dark-900 placeholder:text-dark-500 transition-colors focus:border-dark-900 focus:outline-none"
             />
           </div>
         )}
 
-        {/* Email */}
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="email"
-            className="text-body-medium font-medium text-dark-900"
-          >
+        <div className="space-y-1">
+          <label htmlFor="email" className="text-caption text-dark-900">
             Email
           </label>
           <input
@@ -156,124 +86,58 @@ const AuthForm = ({ mode }: AuthFormProps) => {
             name="email"
             type="email"
             placeholder="johndoe@gmail.com"
+            className="w-full rounded-xl border border-light-300 bg-light-100 px-4 py-3 text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
             autoComplete="email"
             required
-            className="w-full rounded-full border border-light-300 bg-light-200 px-5 py-3 text-body text-dark-900 placeholder:text-dark-500 transition-colors focus:border-dark-900 focus:outline-none"
           />
         </div>
 
-        {/* Password */}
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="password"
-            className="text-body-medium font-medium text-dark-900"
-          >
+        <div className="space-y-1">
+          <label htmlFor="password" className="text-caption text-dark-900">
             Password
           </label>
           <div className="relative">
             <input
               id="password"
               name="password"
-              type={showPassword ? "text" : "password"}
+              type={show ? "text" : "password"}
               placeholder="minimum 8 characters"
-              autoComplete={isSignUp ? "new-password" : "current-password"}
+              className="w-full rounded-xl border border-light-300 bg-light-100 px-4 py-3 pr-12 text-body text-dark-900 placeholder:text-dark-500 focus:outline-none focus:ring-2 focus:ring-dark-900/10"
+              autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+              minLength={8}
               required
-              minLength={isSignUp ? 8 : undefined}
-              className="w-full rounded-full border border-light-300 bg-light-200 px-5 py-3 pr-12 text-body text-dark-900 placeholder:text-dark-500 transition-colors focus:border-dark-900 focus:outline-none"
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-500 hover:text-dark-900 transition-colors"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute inset-y-0 right-0 px-3 text-caption text-dark-700"
+              onClick={() => setShow((v) => !v)}
+              aria-label={show ? "Hide password" : "Show password"}
             >
-              {showPassword ? (
-                /* Eye-off icon */
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                  <line x1="1" y1="1" x2="23" y2="23" />
-                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
-                </svg>
-              ) : (
-                /* Eye icon */
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              )}
+              {show ? "Hide" : "Show"}
             </button>
           </div>
         </div>
 
-        {/* Submit button */}
         <button
           type="submit"
-          disabled={isLoading}
-          className="mt-2 w-full rounded-full bg-dark-900 px-6 py-3.5 text-body-medium font-medium text-light-100 transition-colors hover:bg-dark-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark-900 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 w-full rounded-full bg-dark-900 px-6 py-3 text-body-medium text-light-100 hover:bg-dark-700 focus:outline-none focus:ring-2 focus:ring-dark-900/20"
         >
-          {isLoading
-            ? isSignUp
-              ? "Creating Account..."
-              : "Signing In..."
-            : isSignUp
-              ? "Sign Up"
-              : "Sign In"}
+          {mode === "sign-in" ? "Sign In" : "Sign Up"}
         </button>
-      </form>
 
-      {/* Bottom text */}
-      <div className="mt-6 text-center">
-        {isSignUp ? (
-          <p className="text-caption text-dark-500">
+        {mode === "sign-up" && (
+          <p className="text-center text-footnote text-dark-700">
             By signing up, you agree to our{" "}
-            <Link
-              href="#"
-              className="text-dark-900 underline underline-offset-2 hover:text-dark-700"
-            >
+            <a href="#" className="underline">
               Terms of Service
-            </Link>{" "}
+            </a>{" "}
             and{" "}
-            <Link
-              href="#"
-              className="text-dark-900 underline underline-offset-2 hover:text-dark-700"
-            >
+            <a href="#" className="underline">
               Privacy Policy
-            </Link>
+            </a>
           </p>
-        ) : (
-          <Link
-            href="#"
-            className="text-caption font-medium text-dark-900 underline underline-offset-2 hover:text-dark-700"
-          >
-            Forgot password?
-          </Link>
         )}
-      </div>
+      </form>
     </div>
   );
-};
-
-export default AuthForm;
+}

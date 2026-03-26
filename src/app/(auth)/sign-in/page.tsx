@@ -1,10 +1,6 @@
 import AuthForm from "@/components/AuthForm";
+import {signIn} from "@/lib/auth/actions";
 
-export const metadata = {
-  title: "Sign In | Nike",
-  description: "Sign in to your Nike account",
-};
-
-export default function SignInPage() {
-  return <AuthForm mode="sign-in" />;
+export default function Page() {
+  return <AuthForm mode="sign-in" onSubmit={signIn} />;
 }
