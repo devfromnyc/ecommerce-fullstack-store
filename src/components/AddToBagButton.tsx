@@ -29,6 +29,7 @@ export default function AddToBagButton({
   className = "",
 }: Props) {
   const addItem = useCartStore((s) => s.addItem);
+  const openCart = useCartStore((s) => s.openCart);
   const selected = useVariantStore((s) => s.getSelected(productId, 0));
 
   const selectedVariant = useMemo(
@@ -52,6 +53,7 @@ export default function AddToBagButton({
       price,
       image: imageUrl ?? undefined,
     });
+    openCart();
   };
 
   return (

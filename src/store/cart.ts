@@ -13,10 +13,14 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   total: number;
+  isCartOpen: boolean;
   addItem: (item: Omit<CartItem, "quantity">) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  openCart: () => void;
+  closeCart: () => void;
+  toggleCart: () => void;
   getItemCount: () => number;
 }
 
@@ -28,6 +32,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       total: 0,
+      isCartOpen: false,
       addItem: (item) => {
         const items = get().items;
         const existingItem = items.find((i) => i.id === item.id);
@@ -58,10 +63,17 @@ export const useCartStore = create<CartState>()(
         set({ items: nextItems, total: calculateTotal(nextItems) });
       },
       clearCart: () => set({ items: [], total: 0 }),
+      openCart: () => set({ isCartOpen: true }),
+      closeCart: () => set({ isCartOpen: false }),
+      toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
       getItemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
     }),
     {
       name: "cart-storage",
+      partialize: (state) => ({
+        items: state.items,
+        total: state.total,
+      }),
     }
   )
 );
