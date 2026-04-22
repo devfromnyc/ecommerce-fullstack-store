@@ -224,7 +224,14 @@ export type FullProduct = {
   images: SelectProductImage[];
 };
 
+const UUID_V4_OR_V1_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function getProduct(productId: string): Promise<FullProduct | null> {
+  if (!UUID_V4_OR_V1_REGEX.test(productId)) {
+    return null;
+  }
+
   const rows = await db
     .select({
       productId: products.id,
@@ -399,6 +406,10 @@ export type RecommendedProduct = {
 };
 
 export async function getProductReviews(productId: string): Promise<Review[]> {
+  if (!UUID_V4_OR_V1_REGEX.test(productId)) {
+    return [];
+  }
+
   const rows = await db
     .select({
       id: reviews.id,
@@ -425,6 +436,10 @@ export async function getProductReviews(productId: string): Promise<Review[]> {
 }
 
 export async function getRecommendedProducts(productId: string): Promise<RecommendedProduct[]> {
+  if (!UUID_V4_OR_V1_REGEX.test(productId)) {
+    return [];
+  }
+
   const base = await db
     .select({
       id: products.id,

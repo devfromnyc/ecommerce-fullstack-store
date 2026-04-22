@@ -1,10 +1,11 @@
 import React from "react";
 import { Card } from "@/components";
-import {getCurrentUser} from "@/lib/auth/actions";
+import { getAllProducts } from "@/lib/actions/product";
+import { parseFilterParams } from "@/lib/utils/query";
 
-const products = [
+const fallbackProducts = [
   {
-    id: 1,
+    id: "fallback-1",
     title: "Air Max Pulse",
     subtitle: "Men's Shoes",
     meta: "6 Colour",
@@ -13,7 +14,7 @@ const products = [
     badge: { label: "New", tone: "orange" as const },
   },
   {
-    id: 2,
+    id: "fallback-2",
     title: "Air Zoom Pegasus",
     subtitle: "Men's Shoes",
     meta: "4 Colour",
@@ -22,7 +23,7 @@ const products = [
     badge: { label: "Hot", tone: "red" as const },
   },
   {
-    id: 3,
+    id: "fallback-3",
     title: "InfinityRN 4",
     subtitle: "Men's Shoes",
     meta: "6 Colour",
@@ -31,7 +32,7 @@ const products = [
     badge: { label: "Trending", tone: "green" as const },
   },
   {
-    id: 4,
+    id: "fallback-4",
     title: "Metcon 9",
     subtitle: "Men's Shoes",
     meta: "3 Colour",
@@ -41,9 +42,27 @@ const products = [
 ];
 
 const Home = async () => {
-  const user = await getCurrentUser();
+  const filters = parseFilterParams({ limit: "4", page: "1", sort: "newest" });
+  const { products } = await getAllProducts(filters);
+  const latestProducts = products.slice(0, 4).map((p) => {
+    const displayPrice =
+      p.minPrice !== null && p.maxPrice !== null && p.minPrice !== p.maxPrice
+        ? `$${p.minPrice.toFixed(2)} - $${p.maxPrice.toFixed(2)}`
+        : p.minPrice !== null
+        ? p.minPrice
+        : undefined;
 
-  console.log('USER:', user);
+    return {
+      id: p.id,
+      title: p.name,
+      subtitle: p.subtitle ?? "Nike Shoes",
+      meta: undefined as string | undefined,
+      price: displayPrice,
+      imageSrc: p.imageUrl ?? "/shoes/shoe-1.jpg",
+      href: `/products/${p.id}`,
+    };
+  });
+  const cards = latestProducts.length > 0 ? latestProducts : fallbackProducts;
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -52,7 +71,7 @@ const Home = async () => {
           Latest shoes
         </h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((p) => (
+          {cards.map((p) => (
             <Card
               key={p.id}
               title={p.title}
@@ -60,8 +79,8 @@ const Home = async () => {
               meta={p.meta}
               imageSrc={p.imageSrc}
               price={p.price}
-              badge={p.badge}
-              href={`/products/${p.id}`}
+              badge={"badge" in p ? p.badge : undefined}
+              href={"href" in p ? p.href : "/products"}
             />
           ))}
         </div>
