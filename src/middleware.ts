@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PROTECTED_ROUTES = ["/checkout"];
+const PROTECTED_ROUTES = ["/account", "/orders"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const authSession = request.cookies.get("better-auth.session_token");
+  const authSession = request.cookies.get("auth_session");
 
   if (!authSession?.value) {
     const signInUrl = new URL("/sign-in", request.url);

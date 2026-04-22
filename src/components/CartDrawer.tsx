@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
@@ -11,6 +11,7 @@ function formatPrice(value: number) {
 }
 
 export default function CartDrawer() {
+  const [hydrated, setHydrated] = useState(false);
   const open = useCartStore((s) => s.isCartOpen);
   const openCart = useCartStore((s) => s.openCart);
   const closeCart = useCartStore((s) => s.closeCart);
@@ -22,6 +23,11 @@ export default function CartDrawer() {
 
   const empty = items.length === 0;
   const summary = useMemo(() => formatPrice(total), [total]);
+  const displayItemCount = hydrated ? itemCount : 0;
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   return (
     <>
@@ -29,10 +35,10 @@ export default function CartDrawer() {
         type="button"
         onClick={openCart}
         className="inline-flex items-center gap-2 text-body font-medium text-dark-900 transition-colors hover:text-dark-700"
-        aria-label={`Open cart with ${itemCount} item${itemCount === 1 ? "" : "s"}`}
+        aria-label={`Open cart with ${displayItemCount} item${displayItemCount === 1 ? "" : "s"}`}
       >
         <ShoppingBag className="h-5 w-5" />
-        <span>My Cart ({itemCount})</span>
+        <span>My Cart ({displayItemCount})</span>
       </button>
 
       <div
@@ -56,7 +62,7 @@ export default function CartDrawer() {
           }`}
         >
           <div className="flex items-center justify-between border-b border-light-300 px-5 py-4">
-            <h2 className="text-heading-3 text-dark-900">Your Bag ({itemCount})</h2>
+            <h2 className="text-heading-3 text-dark-900">Your Bag ({displayItemCount})</h2>
             <button
               type="button"
               className="rounded-md p-1 text-dark-700 hover:bg-light-200"
