@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import CartDrawer from "./CartDrawer";
 
 const NAV_LINKS = [
   { label: "Men", href: "/products?gender=men" },
@@ -22,7 +23,7 @@ const Navbar = () => {
         aria-label="Main navigation"
       >
         {/* Logo */}
-        <Link href="/" className="flex-shrink-0" aria-label="Home">
+        <Link href="/" className="shrink-0" aria-label="Home">
           <Image
             src="/logo-dark.svg"
             alt="Nike"
@@ -54,12 +55,7 @@ const Navbar = () => {
           >
             Search
           </Link>
-          <Link
-            href="#"
-            className="text-body font-medium text-dark-900 hover:text-dark-700 transition-colors"
-          >
-            My Cart (2)
-          </Link>
+          <CartDrawer />
         </div>
 
         {/* Mobile hamburger button */}
@@ -116,12 +112,7 @@ const Navbar = () => {
             </Link>
           </li>
           <li>
-            <Link
-              href="#"
-              className="text-body font-medium text-dark-900 hover:text-dark-700 transition-colors"
-            >
-              My Cart (2)
-            </Link>
+            <CartDrawer />
           </li>
         </ul>
       </div>

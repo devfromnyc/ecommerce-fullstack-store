@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Card, CollapsibleSection, ProductGallery, SizePicker } from "@/components";
-import { Heart, ShoppingBag, Star } from "lucide-react";
+import { AddToBagButton, Card, CollapsibleSection, ProductGallery, SizePicker } from "@/components";
+import { Heart, Star } from "lucide-react";
 import ColorSwatches from "@/components/ColorSwatches";
 import { getProduct, getProductReviews, getRecommendedProducts, type Review, type RecommendedProduct } from "@/lib/actions/product";
 
@@ -61,7 +61,7 @@ async function ReviewsSection({ productId }: { productId: string }) {
                 </span>
               </div>
               {r.title && <p className="text-body-medium text-dark-900">{r.title}</p>}
-              {r.content && <p className="mt-1 line-clamp-[8] text-body text-dark-700">{r.content}</p>}
+              {r.content && <p className="mt-1 line-clamp-8 text-body text-dark-700">{r.content}</p>}
               <p className="mt-2 text-caption text-dark-700">{new Date(r.createdAt).toLocaleDateString()}</p>
             </li>
           ))}
@@ -147,6 +147,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const subtitle =
     product.gender?.label ? `${product.gender.label} Shoes` : undefined;
 
+  const cartVariants = variants.map((v) => ({
+    id: v.id,
+    color: v.color?.name ?? null,
+    size: v.size?.name ?? null,
+    price: Number(v.price),
+    salePrice: v.salePrice ? Number(v.salePrice) : null,
+  }));
+  const defaultImage = images.find((img) => img.isPrimary)?.url ?? images[0]?.url;
+
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <nav className="py-4 text-caption text-dark-700">
@@ -183,10 +192,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <SizePicker />
 
           <div className="flex flex-col gap-3">
-            <button className="flex items-center justify-center gap-2 rounded-full bg-dark-900 px-6 py-4 text-body-medium text-light-100 transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--color-dark-500]">
-              <ShoppingBag className="h-5 w-5" />
-              Add to Bag
-            </button>
+            <AddToBagButton
+              productId={product.id}
+              productName={product.name}
+              imageUrl={defaultImage}
+              variants={cartVariants}
+            />
             <button className="flex items-center justify-center gap-2 rounded-full border border-light-300 px-6 py-4 text-body-medium text-dark-900 transition hover:border-dark-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--color-dark-500]">
               <Heart className="h-5 w-5" />
               Favorite

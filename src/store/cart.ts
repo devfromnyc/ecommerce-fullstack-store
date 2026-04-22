@@ -1,23 +1,27 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-interface CartItem {
+export interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
   image?: string;
+  subtitle?: string;
 }
 
 interface CartState {
   items: CartItem[];
   total: number;
-  addItem: (item: Omit<CartItem, 'quantity'>) => void;
+  addItem: (item: Omit<CartItem, "quantity">) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   getItemCount: () => number;
 }
+
+const calculateTotal = (items: CartItem[]) =>
+  items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -27,45 +31,37 @@ export const useCartStore = create<CartState>()(
       addItem: (item) => {
         const items = get().items;
         const existingItem = items.find((i) => i.id === item.id);
-        
+
         if (existingItem) {
-          set({
-            items: items.map((i) =>
-              i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-            ),
-          });
+          const nextItems = items.map((i) =>
+            i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          );
+          set({ items: nextItems, total: calculateTotal(nextItems) });
         } else {
-          set({
-            items: [...items, { ...item, quantity: 1 }],
-          });
+          const nextItems = [...items, { ...item, quantity: 1 }];
+          set({ items: nextItems, total: calculateTotal(nextItems) });
         }
-        
-        const newItems = get().items;
-        const total = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        set({ total });
       },
       removeItem: (id) => {
-        const items = get().items.filter((item) => item.id !== id);
-        const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        set({ items, total });
+        const nextItems = get().items.filter((item) => item.id !== id);
+        set({ items: nextItems, total: calculateTotal(nextItems) });
       },
       updateQuantity: (id, quantity) => {
         if (quantity <= 0) {
           get().removeItem(id);
           return;
         }
-        
-        const items = get().items.map((item) =>
+
+        const nextItems = get().items.map((item) =>
           item.id === id ? { ...item, quantity } : item
         );
-        const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        set({ items, total });
+        set({ items: nextItems, total: calculateTotal(nextItems) });
       },
       clearCart: () => set({ items: [], total: 0 }),
       getItemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
     }),
     {
-      name: 'cart-storage',
+      name: "cart-storage",
     }
   )
 );
