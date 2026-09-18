@@ -26,6 +26,12 @@ export type SavedCheckoutDraft = {
   shippingMethod: "standard" | "express";
 };
 
+type DraftUpdate = {
+  contact?: Partial<CheckoutContact>;
+  shippingAddress?: Partial<ShippingAddress>;
+  shippingMethod?: SavedCheckoutDraft["shippingMethod"];
+};
+
 export type LocalOrder = {
   id: string;
   orderNumber: string;
@@ -48,7 +54,7 @@ export type LocalOrder = {
 type CheckoutState = {
   draft: SavedCheckoutDraft;
   orders: LocalOrder[];
-  setDraft: (updater: Partial<SavedCheckoutDraft>) => void;
+  setDraft: (updater: DraftUpdate) => void;
   addOrder: (order: LocalOrder) => void;
   getOrderById: (orderId: string) => LocalOrder | undefined;
   resetDraft: () => void;
