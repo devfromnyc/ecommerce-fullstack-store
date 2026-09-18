@@ -109,7 +109,7 @@ async function seed() {
     const summer = (await db.select().from(collections).where(eq(collections.slug, 'summer-25')))[0];
     const newArrivals = (await db.select().from(collections).where(eq(collections.slug, 'new-arrivals')))[0];
 
-    const uploadsRoot = join(process.cwd(), 'static', 'uploads', 'shoes');
+    const uploadsRoot = join(process.cwd(), 'public', 'static', 'uploads', 'shoes');
     if (!existsSync(uploadsRoot)) {
       mkdirSync(uploadsRoot, { recursive: true });
     }
